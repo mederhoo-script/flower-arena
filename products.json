@@ -1,0 +1,35 @@
+{
+  "Roses": [
+    {
+      "name": "Crimson Rose Bouquet",
+      "image": "Roses/crimson_rose.png",
+      "description": "Elegant red roses for special occasions 🌹",
+      "Old": "2026-03-20",
+      "New": "2026-03-26"
+    },
+    {
+      "name": "Sunset Rose Mix",
+      "image": "Roses/sunset_rose.png",
+      "description": "Beautiful orange and red rose arrangement 🌺",
+      "Old": "2026-03-15",
+      "New": "2026-03-22"
+    }
+  ],
+  "Mums": [
+    {
+      "name": "Autumn Mums Arrangement",
+      "image": "Mums/autumn_mums.png",
+      "description": "Vibrant fall-colored mums bouquet 🍂",
+      "Old": "2026-03-10",
+      "New": "2026-03-18"
+    }
+  ],
+  "Tulips": [
+    {
+      "name": "Spring Tulip Bundle",
+      "image": "Tulips/spring_tulips.png",
+      "description": "Colorful tulips for spring celebrations 🌸",
+      "Old": "2026-03-05",
+      "New": "2026-03-12"
+    }
+  ]
