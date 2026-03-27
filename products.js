@@ -15,7 +15,7 @@ const products = {
       image: "Roses/ever-red.jpg",
       description: "Elegant red roses for special occasions 🌹",
       Old: "2026-03-20",
-      New: "2026-03-27"    // Today
+      New: "2026-03-29"    // Today
     },
     {
       name: "Fiorella Sunset Mix",
@@ -43,7 +43,7 @@ const products = {
       image: "Roses/white-rose.jpg",
       description: "Pure white roses symbolising elegance and purity 🤍",
       Old: "2026-03-12",
-      New: "2026-03-27"    // Today
+      New: "2026-03-29"    // Today
     },
     {
       name: "White Rose with Leaves",
@@ -57,7 +57,7 @@ const products = {
       image: "Roses/yellow-rose.jpg",
       description: "Cheerful yellow roses to brighten any day ☀️",
       Old: "2026-03-10",
-      New: "2026-03-27"    // today
+      New: "2026-03-29"    // today
     }
   ],
 
@@ -68,14 +68,14 @@ const products = {
       image: "Mums/gold-mums.jpg",
       description: "Vibrant golden mums for a warm autumn feel 🍂",
       Old: "2026-03-10",
-      New: "2026-03-27"    // today
+      New: "2026-03-29"    // today
     },
     {
       name: "Lollipop Mums",
       image: "Mums/lollipop.jpg",
       description: "Fun round lollipop mums in mixed playful colours 🍭",
       Old: "2026-03-08",
-      New: "2026-03-27"    // today
+      New: "2026-03-29"    // today
     },
     {
       name: "Maroon Mums",
@@ -89,7 +89,7 @@ const products = {
       image: "Mums/pink-mums.jpg",
       description: "Delicate pink mums perfect for any celebration 🌸",
       Old: "2026-03-06",
-      New: "2026-03-27"    // Today
+      New: "2026-03-29"    // Today
     },
     {
       name: "White Mums",
@@ -114,7 +114,7 @@ const products = {
       image: "Tulips/cerise-tulip.jpg",
       description: "Vivid cerise tulips bursting with spring colour 🌷",
       Old: "2026-03-05",
-      New: "2026-03-27"    // Today
+      New: "2026-03-29"    // Today
     },
     {
       name: "Sparta Tulip",

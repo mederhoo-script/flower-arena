@@ -18,7 +18,7 @@ const events = [
         name: "Valentine's Day",
         date: "2026-02-14",
         description: "Special love-themed bouquets available 💐",
-        image: ""   // TODO: add images/events/valentines.jpg
+        image: "events/valentines.jpg"   // TODO: add images/events/valentines.jpg
     },
 
     // ── Mother's Day ───────────────────────────────────────────
@@ -26,7 +26,7 @@ const events = [
         name: "Mother's Day",
         date: "2026-05-10",
         description: "Celebrate moms with beautiful flower arrangements 🌸",
-        image: ""   // TODO: add images/events/mothers_day.jpg
+        image: "events/mothers_day.jpeg"   // TODO: add images/events/mothers_day.jpg
     },
 
     // ── Spring Festival ────────────────────────────────────────
@@ -34,7 +34,7 @@ const events = [
         name: "Spring Festival",
         date: "2026-04-20",
         description: "Fresh spring blooms for the season 🌷",
-        image: ""   // TODO: add images/events/spring_festival.jpg
+        image: "events/spring_festival.jpeg"   // TODO: add images/events/spring_festival.jpg
     }
 
 ];
