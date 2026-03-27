@@ -36,7 +36,7 @@ const products = {
       image: "Roses/pink-rose+leaves.jpg",
       description: "Pink roses with lush green leafy accents 🌿",
       Old: "2026-03-17",
-      New: "2026-03-25"    // Earlier
+      New: "2026-03-29"    // expired
     },
     {
       name: "White Rose",
@@ -57,7 +57,7 @@ const products = {
       image: "Roses/yellow-rose.jpg",
       description: "Cheerful yellow roses to brighten any day ☀️",
       Old: "2026-03-10",
-      New: "2026-03-29"    // today
+      New: "2026-03-22"    // expired
     }
   ],
 
