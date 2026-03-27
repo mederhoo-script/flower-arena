@@ -1,5 +1,5 @@
 // ============================================================
-// script.js — Flower Arena Render Logic (Tailwind Version)
+// script.js — Flower Arena Render Logic (Vertical Grid Version)
 // ============================================================
 
 // ── Date Helpers (offset-based) ─────────────────────────
@@ -14,44 +14,17 @@ const dateToday = getDateString(0);
 const dateYesterday = getDateString(1);
 const dateThirdDay = getDateString(2);
 
-// ── Carousel Arrow Buttons (Tailwind Styled) ─────────────────
-
-function addCarouselControls(controlsId, carouselId) {
-    const controls = document.getElementById(controlsId);
-    const carousel = document.getElementById(carouselId);
-    if (!controls || !carousel) return;
-
-    const SCROLL_AMOUNT = 300;
-    const btnClass = "bg-primary text-white w-9 h-9 rounded-full flex items-center justify-center hover:bg-accent hover:text-espresso transition-all duration-300 shadow-md transform active:scale-90";
-
-    const prev = document.createElement("button");
-    prev.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>`;
-    prev.className = btnClass;
-    prev.setAttribute("aria-label", "Scroll left");
-    prev.onclick = () => carousel.scrollBy({ left: -SCROLL_AMOUNT, behavior: "smooth" });
-
-    const next = document.createElement("button");
-    next.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>`;
-    next.className = btnClass;
-    next.setAttribute("aria-label", "Scroll right");
-    next.onclick = () => carousel.scrollBy({ left: SCROLL_AMOUNT, behavior: "smooth" });
-
-    controls.appendChild(prev);
-    controls.appendChild(next);
-}
-
-// ── Product Card Builder (Tailwind Classes) ──────────────────
+// ── Product Card Builder (Vertical Optimized) ──────────────────
 
 function createProductCard(product, category) {
     const card = document.createElement("div");
-    // #3 Small product (w-140/w-180) and give it little boader radius (rounded-2xl)
-    card.className = "product-card flex-shrink-0 w-[140px] md:w-[180px] bg-white rounded-2xl shadow-sm transition-all duration-300 group overflow-hidden cursor-pointer";
+    // Removed fixed widths, cards now fill the grid cells.
+    card.className = "product-card w-full bg-white rounded-2xl shadow-sm transition-all duration-300 group overflow-hidden cursor-pointer";
 
     const altText = `${category} — ${product.name}: ${product.description}`;
 
-    // #1 remove Available: Expires: and add to cart
     card.innerHTML = `
-    <div class="card-image-wrapper relative w-full h-32 md:h-44 overflow-hidden">
+    <div class="card-image-wrapper relative w-full h-32 sm:h-40 md:h-48 overflow-hidden">
       <img
         src="images/${product.image}"
         alt="${altText}"
@@ -73,14 +46,14 @@ function createProductCard(product, category) {
 
 // ── Renderers ──────────────────────────────────────────────
 
-function renderCarousel(containerId, items) {
+function renderGrid(containerId, items) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     container.innerHTML = "";
 
     if (items.length === 0) {
-        container.innerHTML = `<p class="text-muted italic py-10 w-full text-center text-sm">No items found.</p>`;
+        container.innerHTML = `<p class="col-span-full text-muted italic py-10 text-center text-sm">No items found.</p>`;
         return;
     }
 
@@ -100,8 +73,7 @@ function renderEvents() {
 
     events.forEach(event => {
         const card = document.createElement("div");
-        // #5 reduce the the event card
-        card.className = "bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group max-w-xs mx-auto";
+        card.className = "bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group w-full";
 
         const displayDate = new Date(event.date + "T00:00:00").toLocaleDateString("en-US", {
             year: "numeric", month: "short", day: "numeric"
@@ -181,28 +153,24 @@ function init() {
         items.forEach(product => {
             const entry = { product, category };
             buckets.all.push(entry);
+
+            // #2 Date-based logic remains the same, will work with restored static dates.
             if (product.New === dateToday) buckets.today.push(entry);
             else if (product.New === dateYesterday) buckets.yesterday.push(entry);
             else if (product.New === dateThirdDay) buckets.thirdDay.push(entry);
         });
     }
 
-    renderCarousel("today-carousel", buckets.today);
-    renderCarousel("yesterday-carousel", buckets.yesterday);
-    renderCarousel("third-day-carousel", buckets.thirdDay);
-    renderCarousel("bottom-carousel", buckets.all);
-
-    addCarouselControls("today-controls", "today-carousel");
-    addCarouselControls("yesterday-controls", "yesterday-carousel");
-    addCarouselControls("third-day-controls", "third-day-carousel");
-    addCarouselControls("bottom-controls", "bottom-carousel");
+    renderGrid("today-grid", buckets.today);
+    renderGrid("yesterday-grid", buckets.yesterday);
+    renderGrid("third-day-grid", buckets.thirdDay);
+    renderGrid("bottom-grid", buckets.all);
 
     renderEvents();
     initMobileNav();
     initBackToTop();
 
-    // Add entrance animation to sections
-    document.querySelectorAll('.carousel-section, .bottom-carousel-section, .events-section').forEach(s => {
+    document.querySelectorAll('section').forEach(s => {
         s.classList.add('section-animate');
     });
 }
