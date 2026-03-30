@@ -40,6 +40,42 @@ python3 -m http.server 5000 --bind 0.0.0.0
 - Mobile-first responsive design with hamburger menu
 - CSS-based infinite marquee for the "All Products" section
 
+## Admin Panel (`/admin.html`)
+
+A Firebase-powered admin dashboard at `/admin.html` (linked discreetly from the footer).
+
+### Features
+- **Login** — Firebase Auth (email/password). Create users in the Firebase Console.
+- **Products** — Full CRUD. Add/edit/delete flowers across Roses, Mums, Tulips categories. Freshness labels show live status (In-Stock / Day One / Two Days Old). Includes a "Seed from Site Data" button to import the static products.js catalog into Firestore.
+- **Events** — Full CRUD. Add/edit/delete upcoming seasonal events.
+- **Settings** — Edit WhatsApp number, phone, email, and modal button visibility. Changes are live immediately.
+
+### Firebase Setup Required
+
+1. **Auth**: In the Firebase Console → Authentication → Sign-in method, enable **Email/Password**. Create an admin user under "Users".
+2. **Firestore**: In Firebase Console → Firestore Database, create a database. Set security rules to allow authenticated users to read/write:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+### How data flows
+- `firebase-data.js` (module script) loads on every page visit and tries to fetch products/events/config from Firestore.
+- If Firestore has data → it overrides the static `products.js`, `events.js`, `config.js` globals before the site renders.
+- If Firestore is empty or unreachable → static files are used as fallback (site always works).
+
+### Firebase Config
+- Project: `vtu-platform`
+- Collections used: `products`, `events`, `config` (document: `shopConfig`)
+
 ## Deployment
 
 Configured as a static site deployment with `publicDir: "."`.

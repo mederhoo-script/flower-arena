@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flower Arena — Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>⚙️</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['"Playfair Display"', 'Georgia', 'serif'],
+            body: ['"Lato"', 'Arial', 'sans-serif'],
+          },
+          colors: {
+            primary: '#b5451b',
+            accent: '#f4a261',
+            espresso: '#3d2b1f',
+            header: '#1e1008',
+            cream: '#fdf6f0',
+            muted: '#5a4a3f',
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { font-family: 'Lato', sans-serif; }
+    .sidebar-link { transition: background 0.15s, color 0.15s; }
+    .sidebar-link.active { background: #b5451b; color: white; }
+    .tab-active { border-bottom: 2px solid #b5451b; color: #b5451b; font-weight: 700; }
+    .modal-overlay { background: rgba(30,16,8,0.55); backdrop-filter: blur(3px); }
+    #toast { transition: opacity 0.3s, transform 0.3s; }
+    .img-preview { max-height: 60px; max-width: 80px; object-fit: cover; border-radius: 6px; }
+    tr:hover { background: #fdf6f0; }
+    input[type=date]::-webkit-calendar-picker-indicator { cursor: pointer; }
+  </style>
+</head>
+<body class="bg-gray-100 text-espresso font-body min-h-screen">
+
+<!-- ═══════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════ -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-cream to-orange-50">
+  <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm">
+    <div class="text-center mb-7">
+      <div class="text-5xl mb-3">🌸</div>
+      <h1 class="font-heading text-2xl font-bold text-espresso">Flower Arena</h1>
+      <p class="text-sm text-muted mt-1">Admin Dashboard</p>
+    </div>
+    <form id="login-form" class="space-y-4">
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Email</label>
+        <input id="login-email" type="email" required placeholder="admin@example.com"
+          class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition">
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Password</label>
+        <input id="login-password" type="password" required placeholder="••••••••"
+          class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition">
+      </div>
+      <div id="login-error" class="hidden text-red-600 text-xs bg-red-50 rounded-lg px-3 py-2"></div>
+      <button type="submit" id="login-btn"
+        class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition-all active:scale-95 shadow-lg shadow-primary/30">
+        Sign In
+      </button>
+    </form>
+    <p class="text-center text-xs text-muted mt-6 opacity-60">Contact your administrator for access credentials.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     ADMIN APP
+═══════════════════════════════════════ -->
+<div id="admin-app" class="hidden min-h-screen flex flex-col">
+
+  <!-- Top Header -->
+  <header class="bg-header text-white flex items-center justify-between px-5 py-3 shadow-lg z-50 sticky top-0">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">🌸</span>
+      <div>
+        <p class="font-heading font-bold text-base leading-tight">Flower Arena</p>
+        <p class="text-[10px] text-accent/80 uppercase tracking-widest">Admin Panel</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="admin-email" class="text-xs text-white/60 hidden sm:block"></span>
+      <a href="/" target="_blank" class="text-xs text-accent hover:text-white transition px-3 py-1.5 rounded-lg hover:bg-white/10">
+        View Site ↗
+      </a>
+      <button id="logout-btn" class="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition">
+        Sign Out
+      </button>
+    </div>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-56 bg-espresso text-white flex-shrink-0 flex flex-col py-6 shadow-xl hidden md:flex">
+      <nav class="space-y-1 px-3 flex-1">
+        <button onclick="showSection('products')" id="nav-products"
+          class="sidebar-link active w-full text-left px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3">
+          <span>🌹</span> Products
+        </button>
+        <button onclick="showSection('events')" id="nav-events"
+          class="sidebar-link w-full text-left px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3 text-white/70">
+          <span>📅</span> Events
+        </button>
+        <button onclick="showSection('settings')" id="nav-settings"
+          class="sidebar-link w-full text-left px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3 text-white/70">
+          <span>⚙️</span> Settings
+        </button>
+      </nav>
+      <div class="px-3 mt-4">
+        <div class="bg-white/5 rounded-xl px-4 py-3">
+          <p class="text-[10px] text-white/40 uppercase tracking-wider mb-1">Database</p>
+          <p class="text-xs text-white/60">Firebase Firestore</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile Tab Bar -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-espresso z-40 flex border-t border-white/10">
+      <button onclick="showSection('products')" id="mob-products" class="flex-1 py-3 text-xs flex flex-col items-center gap-0.5 text-white/50 transition">
+        <span class="text-base">🌹</span> Products
+      </button>
+      <button onclick="showSection('events')" id="mob-events" class="flex-1 py-3 text-xs flex flex-col items-center gap-0.5 text-white/50 transition">
+        <span class="text-base">📅</span> Events
+      </button>
+      <button onclick="showSection('settings')" id="mob-settings" class="flex-1 py-3 text-xs flex flex-col items-center gap-0.5 text-white/50 transition">
+        <span class="text-base">⚙️</span> Settings
+      </button>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto px-4 md:px-8 py-6 pb-20 md:pb-8">
+
+      <!-- ── PRODUCTS SECTION ── -->
+      <section id="section-products">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div>
+            <h2 class="font-heading text-2xl font-bold text-espresso">Products</h2>
+            <p class="text-sm text-muted">Manage your flower catalog</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="seedFromStaticData()" id="seed-btn"
+              class="text-xs border border-primary text-primary hover:bg-primary hover:text-white px-3 py-2 rounded-lg transition hidden">
+              Seed from Site Data
+            </button>
+            <button onclick="openProductModal(null)"
+              class="bg-primary hover:bg-primary/90 text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+              <span class="text-base leading-none">+</span> Add Product
+            </button>
+          </div>
+        </div>
+
+        <!-- Category Filter -->
+        <div class="flex gap-1 mb-4 border-b border-gray-200">
+          <button onclick="filterProducts('All')" id="cat-All" class="tab-active px-4 py-2 text-sm">All</button>
+          <button onclick="filterProducts('Roses')" id="cat-Roses" class="px-4 py-2 text-sm text-muted hover:text-primary transition">Roses 🌹</button>
+          <button onclick="filterProducts('Mums')" id="cat-Mums" class="px-4 py-2 text-sm text-muted hover:text-primary transition">Mums 🌼</button>
+          <button onclick="filterProducts('Tulips')" id="cat-Tulips" class="px-4 py-2 text-sm text-muted hover:text-primary transition">Tulips 🌷</button>
+        </div>
+
+        <!-- Products Table -->
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div id="products-loading" class="py-12 text-center text-muted text-sm">Loading products…</div>
+          <div id="products-empty" class="hidden py-12 text-center">
+            <p class="text-muted text-sm mb-3">No products found.</p>
+            <button onclick="seedFromStaticData()" class="text-sm text-primary underline hover:no-underline">Seed with existing site data</button>
+          </div>
+          <table id="products-table" class="hidden w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th class="text-left px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold">Image</th>
+                <th class="text-left px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold">Name</th>
+                <th class="text-left px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold hidden sm:table-cell">Category</th>
+                <th class="text-left px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold hidden md:table-cell">New Date</th>
+                <th class="text-left px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold hidden lg:table-cell">Old Date</th>
+                <th class="text-right px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="products-tbody" class="divide-y divide-gray-50"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── EVENTS SECTION ── -->
+      <section id="section-events" class="hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div>
+            <h2 class="font-heading text-2xl font-bold text-espresso">Events</h2>
+            <p class="text-sm text-muted">Manage upcoming floral events</p>
+          </div>
+          <button onclick="openEventModal(null)"
+            class="bg-primary hover:bg-primary/90 text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+            <span class="text-base leading-none">+</span> Add Event
+          </button>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div id="events-loading" class="py-12 text-center text-muted text-sm">Loading events…</div>
+          <div id="events-empty" class="hidden py-12 text-center text-muted text-sm">No events yet. Add your first event!</div>
+          <table id="events-table" class="hidden w-full text-sm">
+            <thead class="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th class="text-left px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold">Name</th>
+                <th class="text-left px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold hidden sm:table-cell">Date</th>
+                <th class="text-left px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold hidden md:table-cell">Description</th>
+                <th class="text-right px-4 py-3 text-xs text-muted uppercase tracking-wider font-bold">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="events-tbody" class="divide-y divide-gray-50"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── SETTINGS SECTION ── -->
+      <section id="section-settings" class="hidden">
+        <div class="mb-5">
+          <h2 class="font-heading text-2xl font-bold text-espresso">Settings</h2>
+          <p class="text-sm text-muted">Shop contact info and configuration</p>
+        </div>
+        <div class="max-w-xl">
+          <form id="settings-form" class="space-y-5">
+
+            <!-- WhatsApp -->
+            <div class="bg-white rounded-2xl shadow-sm p-5 space-y-4">
+              <h3 class="font-bold text-espresso flex items-center gap-2 text-base">💬 WhatsApp</h3>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Phone Number <span class="text-gray-400 font-normal normal-case">(with country code, no +)</span></label>
+                <input id="cfg-wa-number" type="text" placeholder="2348034295030"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Default Message</label>
+                <textarea id="cfg-wa-msg" rows="2" placeholder="Hello! I'm interested in viewing your products."
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">WhatsApp Button Text</label>
+                <input id="cfg-wa-btn-text" type="text" placeholder="Order via WhatsApp"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+              </div>
+            </div>
+
+            <!-- Contact -->
+            <div class="bg-white rounded-2xl shadow-sm p-5 space-y-4">
+              <h3 class="font-bold text-espresso flex items-center gap-2 text-base">📞 Contact Info</h3>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Phone Number</label>
+                <input id="cfg-phone" type="text" placeholder="+2348034295030"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Email Address</label>
+                <input id="cfg-email" type="email" placeholder="hello@flowerarena.com"
+                  class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+              </div>
+            </div>
+
+            <!-- Modal Buttons -->
+            <div class="bg-white rounded-2xl shadow-sm p-5 space-y-3">
+              <h3 class="font-bold text-espresso flex items-center gap-2 text-base">🪟 Product Modal Buttons</h3>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <div class="relative">
+                  <input id="cfg-show-phone" type="checkbox" class="sr-only peer">
+                  <div class="w-10 h-6 bg-gray-200 rounded-full peer-checked:bg-primary transition-colors"></div>
+                  <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+                </div>
+                <span class="text-sm text-espresso">Show Phone button</span>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <div class="relative">
+                  <input id="cfg-show-email" type="checkbox" class="sr-only peer">
+                  <div class="w-10 h-6 bg-gray-200 rounded-full peer-checked:bg-primary transition-colors"></div>
+                  <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+                </div>
+                <span class="text-sm text-espresso">Show Email button</span>
+              </label>
+            </div>
+
+            <div id="settings-loading" class="hidden text-center text-muted text-sm py-2">Loading settings…</div>
+
+            <button type="submit"
+              class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl transition active:scale-95 shadow-lg shadow-primary/20">
+              Save Settings
+            </button>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PRODUCT MODAL
+═══════════════════════════════════════ -->
+<div id="product-modal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
+  <div class="absolute inset-0 modal-overlay" onclick="closeProductModal()"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <h3 id="product-modal-title" class="font-heading font-bold text-lg text-espresso">Add Product</h3>
+      <button onclick="closeProductModal()" class="text-muted hover:text-espresso text-xl leading-none">✕</button>
+    </div>
+    <form id="product-form" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+      <input type="hidden" id="product-id">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Product Name *</label>
+          <input id="p-name" type="text" required placeholder="Ever Red Rose"
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Category *</label>
+          <select id="p-category" required
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 bg-white">
+            <option value="Roses">🌹 Roses</option>
+            <option value="Mums">🌼 Mums</option>
+            <option value="Tulips">🌷 Tulips</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Image Path *</label>
+          <input id="p-image" type="text" required placeholder="Roses/ever-red.jpg"
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+          <p class="text-[10px] text-muted mt-1">Relative path inside images/ folder</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">New Date (Arrival) *</label>
+          <input id="p-new" type="date" required
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+          <p class="text-[10px] text-muted mt-1">Controls Today / Day One / Earlier freshness</p>
+        </div>
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Old Date</label>
+          <input id="p-old" type="date"
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Description *</label>
+          <textarea id="p-description" required rows="2" placeholder="Beautiful red roses for special occasions 🌹"
+            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"></textarea>
+        </div>
+      </div>
+      <!-- Image preview -->
+      <div id="p-preview-wrap" class="hidden">
+        <p class="text-xs text-muted uppercase tracking-wider font-bold mb-1">Preview</p>
+        <img id="p-preview" src="" alt="" class="img-preview">
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeProductModal()"
+          class="flex-1 border border-gray-200 text-muted py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition">Cancel</button>
+        <button type="submit"
+          class="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition shadow-sm">Save Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     EVENT MODAL
+═══════════════════════════════════════ -->
+<div id="event-modal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
+  <div class="absolute inset-0 modal-overlay" onclick="closeEventModal()"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <h3 id="event-modal-title" class="font-heading font-bold text-lg text-espresso">Add Event</h3>
+      <button onclick="closeEventModal()" class="text-muted hover:text-espresso text-xl leading-none">✕</button>
+    </div>
+    <form id="event-form" class="p-6 space-y-4">
+      <input type="hidden" id="event-id">
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Event Name *</label>
+        <input id="e-name" type="text" required placeholder="Mother's Day"
+          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Date *</label>
+        <input id="e-date" type="date" required
+          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Description *</label>
+        <textarea id="e-description" required rows="2" placeholder="Celebrate moms with beautiful arrangements 🌸"
+          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"></textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Image Path</label>
+        <input id="e-image" type="text" placeholder="events/mothers_day.jpeg"
+          class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+        <p class="text-[10px] text-muted mt-1">Optional — relative path inside images/ folder</p>
+      </div>
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="closeEventModal()"
+          class="flex-1 border border-gray-200 text-muted py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition">Cancel</button>
+        <button type="submit"
+          class="flex-1 bg-primary text-white py-2.5 rounded-xl text-sm font-bold hover:bg-primary/90 transition shadow-sm">Save Event</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     CONFIRM DELETE MODAL
+═══════════════════════════════════════ -->
+<div id="confirm-modal" class="fixed inset-0 z-[300] hidden items-center justify-center p-4">
+  <div class="absolute inset-0 modal-overlay" onclick="closeConfirm()"></div>
+  <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+    <div class="text-4xl mb-3">🗑️</div>
+    <h3 class="font-heading font-bold text-lg text-espresso mb-1">Delete Item?</h3>
+    <p id="confirm-msg" class="text-sm text-muted mb-5">This action cannot be undone.</p>
+    <div class="flex gap-3">
+      <button onclick="closeConfirm()" class="flex-1 border border-gray-200 text-muted py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 transition">Cancel</button>
+      <button id="confirm-yes" class="flex-1 bg-red-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-red-600 transition">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[500] opacity-0 pointer-events-none px-5 py-3 rounded-xl text-white text-sm font-bold shadow-xl transform translate-y-2">
+</div>
+
+<!-- Static data (for seeding Firestore) -->
+<script src="config.js"></script>
+<script src="products.js"></script>
+<script src="events.js"></script>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import { getFirestore, collection, getDocs, addDoc, setDoc,
+  doc, deleteDoc, updateDoc, getDoc, query, orderBy }
+  from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD_n8A9lNoaPgdEHxokqY-A0OAryHEsR4g",
+  authDomain: "vtu-platform.firebaseapp.com",
+  projectId: "vtu-platform",
+  storageBucket: "vtu-platform.firebasestorage.app",
+  messagingSenderId: "730960900503",
+  appId: "1:730960900503:web:7daabad4f38ae213b414d2",
+  measurementId: "G-7V34R30WW1"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ── Data State ─────────────────────────────────────
+let allProducts = [];
+let allEvents = [];
+let currentFilter = 'All';
+let confirmCallback = null;
+
+// ── Auth ───────────────────────────────────────────
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('admin-app').classList.remove('hidden');
+    document.getElementById('admin-app').classList.add('flex');
+    const emailEl = document.getElementById('admin-email');
+    if (emailEl) emailEl.textContent = user.email;
+    loadAllData();
+  } else {
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('admin-app').classList.add('hidden');
+    document.getElementById('admin-app').classList.remove('flex');
+  }
+});
+
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  btn.textContent = 'Signing in…';
+  btn.disabled = true;
+  err.classList.add('hidden');
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (error) {
+    err.textContent = friendlyAuthError(error.code);
+    err.classList.remove('hidden');
+    btn.textContent = 'Sign In';
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await signOut(auth);
+});
+
+function friendlyAuthError(code) {
+  const map = {
+    'auth/invalid-credential': 'Invalid email or password.',
+    'auth/user-not-found': 'No account found with that email.',
+    'auth/wrong-password': 'Incorrect password.',
+    'auth/too-many-requests': 'Too many attempts. Please wait and try again.',
+  };
+  return map[code] || 'Sign-in failed. Please try again.';
+}
+
+// ── Load Data ──────────────────────────────────────
+async function loadAllData() {
+  await Promise.all([loadProducts(), loadEvents(), loadConfig()]);
+}
+
+async function loadProducts() {
+  const tbody = document.getElementById('products-tbody');
+  allProducts = [];
+  try {
+    const snap = await getDocs(collection(db, 'products'));
+    snap.forEach(d => allProducts.push({ id: d.id, ...d.data() }));
+    allProducts.sort((a, b) => {
+      if (a.category !== b.category) return a.category.localeCompare(b.category);
+      return (a.order || 0) - (b.order || 0);
+    });
+  } catch(e) { showToast('Failed to load products', 'error'); }
+  renderProducts();
+}
+
+async function loadEvents() {
+  allEvents = [];
+  try {
+    const snap = await getDocs(collection(db, 'events'));
+    snap.forEach(d => allEvents.push({ id: d.id, ...d.data() }));
+    allEvents.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  } catch(e) { showToast('Failed to load events', 'error'); }
+  renderEvents();
+}
+
+async function loadConfig() {
+  const el = id => document.getElementById(id);
+  document.getElementById('settings-loading').classList.remove('hidden');
+  try {
+    const snap = await getDoc(doc(db, 'config', 'shopConfig'));
+    if (snap.exists()) {
+      const c = snap.data();
+      el('cfg-wa-number').value = c.whatsapp?.number || '';
+      el('cfg-wa-msg').value = c.whatsapp?.defaultMessage || '';
+      el('cfg-wa-btn-text').value = c.modal?.whatsappBtnText || '';
+      el('cfg-phone').value = c.phone || '';
+      el('cfg-email').value = c.email || '';
+      el('cfg-show-phone').checked = c.modal?.showPhoneBtn !== false;
+      el('cfg-show-email').checked = c.modal?.showEmailBtn !== false;
+    } else {
+      // Seed from static config.js
+      if (typeof shopConfig !== 'undefined') {
+        const c = shopConfig;
+        el('cfg-wa-number').value = c.whatsapp?.number || '';
+        el('cfg-wa-msg').value = c.whatsapp?.defaultMessage || '';
+        el('cfg-wa-btn-text').value = c.modal?.whatsappBtnText || '';
+        el('cfg-phone').value = c.phone || '';
+        el('cfg-email').value = c.email || '';
+        el('cfg-show-phone').checked = c.modal?.showPhoneBtn !== false;
+        el('cfg-show-email').checked = c.modal?.showEmailBtn !== false;
+      }
+    }
+  } catch(e) { showToast('Failed to load settings', 'error'); }
+  document.getElementById('settings-loading').classList.add('hidden');
+}
+
+// ── Render Products ────────────────────────────────
+window.filterProducts = function(cat) {
+  currentFilter = cat;
+  document.querySelectorAll('[id^="cat-"]').forEach(btn => {
+    btn.classList.remove('tab-active');
+    btn.classList.add('text-muted');
+  });
+  const active = document.getElementById('cat-' + cat);
+  if (active) { active.classList.add('tab-active'); active.classList.remove('text-muted'); }
+  renderProducts();
+};
+
+function renderProducts() {
+  const loading = document.getElementById('products-loading');
+  const empty = document.getElementById('products-empty');
+  const table = document.getElementById('products-table');
+  const tbody = document.getElementById('products-tbody');
+  const seedBtn = document.getElementById('seed-btn');
+
+  loading.classList.add('hidden');
+  const filtered = currentFilter === 'All' ? allProducts : allProducts.filter(p => p.category === currentFilter);
+
+  if (allProducts.length === 0) {
+    empty.classList.remove('hidden');
+    table.classList.add('hidden');
+    seedBtn.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  seedBtn.classList.add('hidden');
+  table.classList.remove('hidden');
+
+  tbody.innerHTML = filtered.map(p => `
+    <tr class="transition-colors">
+      <td class="px-4 py-3">
+        <img src="images/${escHtml(p.image)}" alt="" class="img-preview"
+          onerror="this.style.opacity=0.3; this.title='Image not found';">
+      </td>
+      <td class="px-4 py-3">
+        <p class="font-bold text-espresso text-sm">${escHtml(p.name)}</p>
+        <p class="text-muted text-[11px] max-w-[180px] truncate">${escHtml(p.description || '')}</p>
+      </td>
+      <td class="px-4 py-3 hidden sm:table-cell">
+        <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-50 text-primary border border-orange-100">
+          ${escHtml(p.category)}
+        </span>
+      </td>
+      <td class="px-4 py-3 hidden md:table-cell">
+        <span class="text-xs font-mono text-espresso">${escHtml(p.New || '—')}</span>
+        <span class="block text-[10px] text-muted">${freshnessLabel(p.New)}</span>
+      </td>
+      <td class="px-4 py-3 hidden lg:table-cell text-xs font-mono text-muted">${escHtml(p.Old || '—')}</td>
+      <td class="px-4 py-3 text-right">
+        <button onclick="openProductModal('${p.id}')"
+          class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition mr-1 text-espresso">Edit</button>
+        <button onclick="confirmDelete('product','${p.id}','${escHtml(p.name)}')"
+          class="text-xs px-3 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 transition">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function freshnessLabel(dateStr) {
+  if (!dateStr) return '';
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
+  const twoDaysAgo = new Date(Date.now()-2*86400000).toISOString().split('T')[0];
+  if (dateStr === today) return '✅ In-Stock';
+  if (dateStr === yesterday) return '🟡 Day One';
+  if (dateStr === twoDaysAgo) return '🟠 Two Days Old';
+  return dateStr > today ? '🔵 Future' : '⚫ Older';
+}
+
+// ── Render Events ──────────────────────────────────
+function renderEvents() {
+  const loading = document.getElementById('events-loading');
+  const empty = document.getElementById('events-empty');
+  const table = document.getElementById('events-table');
+  const tbody = document.getElementById('events-tbody');
+
+  loading.classList.add('hidden');
+  if (allEvents.length === 0) {
+    empty.classList.remove('hidden');
+    table.classList.add('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  table.classList.remove('hidden');
+
+  tbody.innerHTML = allEvents.map(ev => {
+    const displayDate = ev.date ? new Date(ev.date + 'T00:00:00').toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' }) : '—';
+    return `
+    <tr class="transition-colors">
+      <td class="px-4 py-3">
+        <p class="font-bold text-espresso text-sm">${escHtml(ev.name)}</p>
+      </td>
+      <td class="px-4 py-3 hidden sm:table-cell text-sm text-muted">${displayDate}</td>
+      <td class="px-4 py-3 hidden md:table-cell text-xs text-muted max-w-[220px] truncate">${escHtml(ev.description || '')}</td>
+      <td class="px-4 py-3 text-right">
+        <button onclick="openEventModal('${ev.id}')"
+          class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition mr-1 text-espresso">Edit</button>
+        <button onclick="confirmDelete('event','${ev.id}','${escHtml(ev.name)}')"
+          class="text-xs px-3 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 transition">Delete</button>
+      </td>
+    </tr>
+  `}).join('');
+}
+
+// ── Product Modal ──────────────────────────────────
+window.openProductModal = function(productId) {
+  const modal = document.getElementById('product-modal');
+  const form = document.getElementById('product-form');
+  const title = document.getElementById('product-modal-title');
+  form.reset();
+  document.getElementById('p-preview-wrap').classList.add('hidden');
+
+  if (productId) {
+    const p = allProducts.find(x => x.id === productId);
+    if (!p) return;
+    title.textContent = 'Edit Product';
+    document.getElementById('product-id').value = productId;
+    document.getElementById('p-name').value = p.name || '';
+    document.getElementById('p-category').value = p.category || 'Roses';
+    document.getElementById('p-image').value = p.image || '';
+    document.getElementById('p-description').value = p.description || '';
+    document.getElementById('p-new').value = p.New || '';
+    document.getElementById('p-old').value = p.Old || '';
+    if (p.image) {
+      const prev = document.getElementById('p-preview');
+      prev.src = 'images/' + p.image;
+      document.getElementById('p-preview-wrap').classList.remove('hidden');
+    }
+  } else {
+    title.textContent = 'Add Product';
+    document.getElementById('product-id').value = '';
+    document.getElementById('p-new').value = new Date().toISOString().split('T')[0];
+  }
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+window.closeProductModal = function() {
+  document.getElementById('product-modal').classList.add('hidden');
+  document.getElementById('product-modal').classList.remove('flex');
+};
+
+document.getElementById('p-image').addEventListener('input', function() {
+  const val = this.value.trim();
+  const wrap = document.getElementById('p-preview-wrap');
+  const prev = document.getElementById('p-preview');
+  if (val) {
+    prev.src = 'images/' + val;
+    wrap.classList.remove('hidden');
+  } else {
+    wrap.classList.add('hidden');
+  }
+});
+
+document.getElementById('product-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = document.getElementById('product-id').value;
+  const data = {
+    name: document.getElementById('p-name').value.trim(),
+    category: document.getElementById('p-category').value,
+    image: document.getElementById('p-image').value.trim(),
+    description: document.getElementById('p-description').value.trim(),
+    New: document.getElementById('p-new').value,
+    Old: document.getElementById('p-old').value,
+  };
+  const btn = e.submitter;
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+  try {
+    if (id) {
+      await updateDoc(doc(db, 'products', id), data);
+      showToast('Product updated ✓', 'success');
+    } else {
+      await addDoc(collection(db, 'products'), data);
+      showToast('Product added ✓', 'success');
+    }
+    closeProductModal();
+    await loadProducts();
+  } catch(err) {
+    showToast('Save failed: ' + err.message, 'error');
+  } finally {
+    btn.textContent = 'Save Product';
+    btn.disabled = false;
+  }
+});
+
+// ── Event Modal ────────────────────────────────────
+window.openEventModal = function(eventId) {
+  const modal = document.getElementById('event-modal');
+  const form = document.getElementById('event-form');
+  form.reset();
+  const title = document.getElementById('event-modal-title');
+
+  if (eventId) {
+    const ev = allEvents.find(x => x.id === eventId);
+    if (!ev) return;
+    title.textContent = 'Edit Event';
+    document.getElementById('event-id').value = eventId;
+    document.getElementById('e-name').value = ev.name || '';
+    document.getElementById('e-date').value = ev.date || '';
+    document.getElementById('e-description').value = ev.description || '';
+    document.getElementById('e-image').value = ev.image || '';
+  } else {
+    title.textContent = 'Add Event';
+    document.getElementById('event-id').value = '';
+  }
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+window.closeEventModal = function() {
+  document.getElementById('event-modal').classList.add('hidden');
+  document.getElementById('event-modal').classList.remove('flex');
+};
+
+document.getElementById('event-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = document.getElementById('event-id').value;
+  const data = {
+    name: document.getElementById('e-name').value.trim(),
+    date: document.getElementById('e-date').value,
+    description: document.getElementById('e-description').value.trim(),
+    image: document.getElementById('e-image').value.trim(),
+  };
+  const btn = e.submitter;
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+  try {
+    if (id) {
+      await updateDoc(doc(db, 'events', id), data);
+      showToast('Event updated ✓', 'success');
+    } else {
+      await addDoc(collection(db, 'events'), data);
+      showToast('Event added ✓', 'success');
+    }
+    closeEventModal();
+    await loadEvents();
+  } catch(err) {
+    showToast('Save failed: ' + err.message, 'error');
+  } finally {
+    btn.textContent = 'Save Event';
+    btn.disabled = false;
+  }
+});
+
+// ── Settings ───────────────────────────────────────
+document.getElementById('settings-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = e.submitter;
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+  const data = {
+    whatsapp: {
+      number: document.getElementById('cfg-wa-number').value.trim(),
+      defaultMessage: document.getElementById('cfg-wa-msg').value.trim(),
+    },
+    phone: document.getElementById('cfg-phone').value.trim(),
+    email: document.getElementById('cfg-email').value.trim(),
+    modal: {
+      whatsappBtnText: document.getElementById('cfg-wa-btn-text').value.trim() || 'Order via WhatsApp',
+      showPhoneBtn: document.getElementById('cfg-show-phone').checked,
+      showEmailBtn: document.getElementById('cfg-show-email').checked,
+    }
+  };
+  try {
+    await setDoc(doc(db, 'config', 'shopConfig'), data);
+    showToast('Settings saved ✓', 'success');
+  } catch(err) {
+    showToast('Save failed: ' + err.message, 'error');
+  } finally {
+    btn.textContent = 'Save Settings';
+    btn.disabled = false;
+  }
+});
+
+// ── Delete Confirm ─────────────────────────────────
+window.confirmDelete = function(type, id, name) {
+  const modal = document.getElementById('confirm-modal');
+  document.getElementById('confirm-msg').textContent = `Delete "${name}"? This cannot be undone.`;
+  confirmCallback = async () => {
+    try {
+      await deleteDoc(doc(db, type === 'product' ? 'products' : 'events', id));
+      showToast('Deleted ✓', 'success');
+      if (type === 'product') await loadProducts();
+      else await loadEvents();
+    } catch(err) {
+      showToast('Delete failed: ' + err.message, 'error');
+    }
+    closeConfirm();
+  };
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+window.closeConfirm = function() {
+  document.getElementById('confirm-modal').classList.add('hidden');
+  document.getElementById('confirm-modal').classList.remove('flex');
+  confirmCallback = null;
+};
+
+document.getElementById('confirm-yes').addEventListener('click', () => {
+  if (confirmCallback) confirmCallback();
+});
+
+// ── Seed from Static Data ──────────────────────────
+window.seedFromStaticData = async function() {
+  const btn = document.getElementById('seed-btn');
+  if (!btn) return;
+  const originalText = btn.textContent;
+  btn.textContent = 'Seeding…';
+  btn.disabled = true;
+  try {
+    let count = 0;
+    // Seed products
+    if (typeof products !== 'undefined') {
+      for (const [category, items] of Object.entries(products)) {
+        for (let i = 0; i < items.length; i++) {
+          await addDoc(collection(db, 'products'), { ...items[i], category, order: i });
+          count++;
+        }
+      }
+    }
+    showToast(`Seeded ${count} products ✓`, 'success');
+    await loadProducts();
+  } catch(err) {
+    showToast('Seed failed: ' + err.message, 'error');
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+};
+
+// ── Section Navigation ─────────────────────────────
+window.showSection = function(name) {
+  ['products', 'events', 'settings'].forEach(s => {
+    document.getElementById('section-' + s).classList.toggle('hidden', s !== name);
+    const nav = document.getElementById('nav-' + s);
+    const mob = document.getElementById('mob-' + s);
+    if (nav) {
+      nav.classList.toggle('active', s === name);
+      nav.classList.toggle('text-white/70', s !== name);
+    }
+    if (mob) {
+      mob.classList.toggle('text-white', s === name);
+      mob.classList.toggle('text-white/50', s !== name);
+    }
+  });
+};
+
+// ── Toast ──────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = `fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-[500] px-5 py-3 rounded-xl text-white text-sm font-bold shadow-xl transform transition-all duration-300`;
+  toast.style.backgroundColor = type === 'success' ? '#2d6a4f' : '#dc2626';
+  toast.style.opacity = '1';
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+  toast.style.pointerEvents = 'auto';
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(8px)';
+    toast.style.pointerEvents = 'none';
+  }, 3000);
+}
+
+// ── Helpers ────────────────────────────────────────
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+
+</body>
+</html>

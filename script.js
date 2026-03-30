@@ -254,4 +254,12 @@ function init() {
     initFooter();
 }
 
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", () => {
+    // If firebase-data.js is still loading Firestore data, defer init() until it's ready.
+    // Otherwise call init() immediately with the static data already in memory.
+    if (window.__firebaseDataLoading) {
+        window.__onFirebaseDataReady = init;
+    } else {
+        init();
+    }
+});
