@@ -123,6 +123,18 @@ const products = {
       Old: "2026-03-03",
       New: "2026-03-25"    // Earlier
     }
-  ]
+  ],
+
+  // ── Chrysanthemums ─────────────────────────────────────────
+  Chrysanthemums: [],
+
+  // ── Carnations ─────────────────────────────────────────────
+  Carnations: [],
+
+  // ── Gypsophilla ────────────────────────────────────────────
+  Gypsophilla: [],
+
+  // ── Other Fillers ──────────────────────────────────────────
+  "Other Fillers": []
 
 };
