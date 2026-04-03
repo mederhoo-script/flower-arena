@@ -489,7 +489,6 @@
 </div>
 
 <!-- Static data (for seeding Firestore) -->
-<script src="env.js"></script>
 <script src="config.js"></script>
 <script src="products.js"></script>
 <script src="events.js"></script>
@@ -503,18 +502,10 @@ import { getFirestore, collection, getDocs, addDoc, setDoc,
   doc, deleteDoc, updateDoc, getDoc, query, orderBy }
   from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-const env = window.__ENV || {};
-const firebaseConfig = {
-  apiKey: env.FIREBASE_API_KEY,
-  authDomain: env.FIREBASE_AUTH_DOMAIN,
-  projectId: env.FIREBASE_PROJECT_ID,
-  storageBucket: env.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
-  appId: env.FIREBASE_APP_ID,
-  measurementId: env.FIREBASE_MEASUREMENT_ID
-};
-
-const app = initializeApp(firebaseConfig);
+// ── Fetch config from Vercel serverless function ───
+const cfgRes = await fetch('/api/config');
+const cfg = await cfgRes.json();
+const app = initializeApp(cfg.firebase);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -1117,9 +1108,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Cloudinary Upload ─────────────────────────────
 async function uploadToCloudinary(file) {
-  const env = window.__ENV || {};
-  const cloudName = env.CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = env.CLOUDINARY_UPLOAD_PRESET;
+  const cfgRes = await fetch('/api/config');
+  const cfg = await cfgRes.json();
+  const { cloudName, uploadPreset } = cfg.cloudinary;
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', uploadPreset);
