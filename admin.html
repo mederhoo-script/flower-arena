@@ -172,6 +172,31 @@
           <button onclick="filterProducts('Other Fillers')" id="cat-Other-Fillers" class="px-4 py-2 text-sm text-muted hover:text-primary transition">Other Fillers 🌿</button>
         </div>
 
+        <!-- Static Products Panel -->
+        <div class="mb-4">
+          <button type="button" onclick="toggleStaticPanel()"
+            class="flex items-center gap-2 text-sm font-bold text-muted hover:text-primary transition px-1 py-2 w-full text-left">
+            <span id="static-panel-arrow" class="transition-transform duration-200">▶</span>
+            Static Products
+            <span class="text-[10px] font-normal normal-case text-muted/70">(hardcoded in products.js — click to set stock status)</span>
+          </button>
+          <div id="static-products-panel" class="hidden bg-white rounded-2xl shadow-sm overflow-hidden mt-1">
+            <div class="px-4 py-3 border-b border-gray-100 bg-amber-50">
+              <p class="text-xs text-amber-800">These products come from the site's static <code class="font-mono">products.js</code> file. Use the buttons to add them to Firestore with the chosen stock status.</p>
+            </div>
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th class="text-left px-4 py-2 text-xs text-muted uppercase tracking-wider font-bold">Name</th>
+                  <th class="text-left px-4 py-2 text-xs text-muted uppercase tracking-wider font-bold hidden sm:table-cell">Category</th>
+                  <th class="text-right px-4 py-2 text-xs text-muted uppercase tracking-wider font-bold">Set Stock</th>
+                </tr>
+              </thead>
+              <tbody id="static-products-tbody" class="divide-y divide-gray-50"></tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Products Table -->
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div id="products-loading" class="py-12 text-center text-muted text-sm">Loading products…</div>
@@ -334,11 +359,39 @@
             <option value="Other Fillers">🌿 Other Fillers</option>
           </select>
         </div>
-        <div>
-          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">Image Path *</label>
-          <input id="p-image" type="text" required placeholder="Roses/ever-red.jpg"
-            class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
-          <p class="text-[10px] text-muted mt-1">Relative path inside images/ folder</p>
+        <div class="col-span-2">
+          <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-2">Product Image *</label>
+          <!-- Image source tabs -->
+          <div class="flex gap-1 mb-3 bg-gray-100 rounded-lg p-1">
+            <button type="button" id="img-tab-url" onclick="switchImgTab('url')"
+              class="img-tab flex-1 text-xs py-1.5 rounded-md font-medium transition bg-white text-primary shadow-sm">URL Link</button>
+            <button type="button" id="img-tab-path" onclick="switchImgTab('path')"
+              class="img-tab flex-1 text-xs py-1.5 rounded-md font-medium transition text-muted">File Path</button>
+            <button type="button" id="img-tab-upload" onclick="switchImgTab('upload')"
+              class="img-tab flex-1 text-xs py-1.5 rounded-md font-medium transition text-muted">Upload</button>
+          </div>
+          <!-- URL input -->
+          <div id="img-input-url">
+            <input id="p-image-url" type="url" placeholder="https://example.com/flower.jpg"
+              class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+            <p class="text-[10px] text-muted mt-1">Full HTTPS URL to the image</p>
+          </div>
+          <!-- Path input -->
+          <div id="img-input-path" class="hidden">
+            <input id="p-image-path" type="text" placeholder="Roses/ever-red.jpg"
+              class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+            <p class="text-[10px] text-muted mt-1">Relative path inside images/ folder</p>
+          </div>
+          <!-- Upload input -->
+          <div id="img-input-upload" class="hidden">
+            <label class="block w-full cursor-pointer border-2 border-dashed border-gray-200 rounded-xl px-4 py-4 text-sm text-center hover:border-primary/40 transition">
+              <span id="upload-label-text">Click to choose an image file</span>
+              <input id="p-image-file" type="file" accept="image/*" class="hidden">
+            </label>
+            <div id="upload-status" class="hidden text-xs mt-1"></div>
+          </div>
+          <!-- Hidden field carrying final image value -->
+          <input type="hidden" id="p-image">
         </div>
         <div>
           <label class="block text-xs font-bold uppercase tracking-wider text-muted mb-1">New Date (Arrival) *</label>
@@ -611,10 +664,12 @@ function renderProducts() {
   seedBtn.classList.add('hidden');
   table.classList.remove('hidden');
 
-  tbody.innerHTML = filtered.map(p => `
+  tbody.innerHTML = filtered.map(p => {
+    const imgSrc = /^https?:\/\//.test(p.image) ? escHtml(p.image) : 'images/' + escHtml(p.image);
+    return `
     <tr class="transition-colors">
       <td class="px-4 py-3">
-        <img src="images/${escHtml(p.image)}" alt="" class="img-preview"
+        <img src="${imgSrc}" alt="" class="img-preview"
           onerror="this.style.opacity=0.3; this.title='Image not found';">
       </td>
       <td class="px-4 py-3">
@@ -632,13 +687,17 @@ function renderProducts() {
       </td>
       <td class="px-4 py-3 hidden lg:table-cell text-xs font-mono text-muted">${escHtml(p.Old || '—')}</td>
       <td class="px-4 py-3 text-right">
+        <button onclick="setStockStatus('${p.id}','fresh')"
+          class="text-[10px] px-2 py-1 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition mr-1" title="Set In-Stock Fresh (today)">✅ Fresh</button>
+        <button onclick="setStockStatus('${p.id}','still')"
+          class="text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition mr-1" title="Set Still In-Stock (yesterday)">🟡 Still</button>
         <button onclick="openProductModal('${p.id}')"
           class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition mr-1 text-espresso">Edit</button>
         <button onclick="confirmDelete('product','${p.id}','${escHtml(p.name)}')"
           class="text-xs px-3 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 transition">Delete</button>
       </td>
     </tr>
-  `).join('');
+  `}).join('');
 }
 
 function freshnessLabel(dateStr) {
@@ -646,10 +705,9 @@ function freshnessLabel(dateStr) {
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
   const twoDaysAgo = new Date(Date.now()-2*86400000).toISOString().split('T')[0];
-  if (dateStr === today) return '✅ In-Stock';
-  if (dateStr === yesterday) return '🟡 Day One';
-  if (dateStr === twoDaysAgo) return '🟠 Two Days Old';
-  return dateStr > today ? '🔵 Future' : '⚫ Older';
+  if (dateStr >= today) return '✅ In-Stock Fresh';
+  if (dateStr === yesterday || dateStr === twoDaysAgo) return '🟡 Still In-Stock';
+  return '⚫ Out of Stock';
 }
 
 // ── Render Events ──────────────────────────────────
@@ -694,6 +752,8 @@ window.openProductModal = function(productId) {
   const title = document.getElementById('product-modal-title');
   form.reset();
   document.getElementById('p-preview-wrap').classList.add('hidden');
+  document.getElementById('p-image').value = '';
+  switchImgTab('url');
 
   if (productId) {
     const p = allProducts.find(x => x.id === productId);
@@ -702,13 +762,20 @@ window.openProductModal = function(productId) {
     document.getElementById('product-id').value = productId;
     document.getElementById('p-name').value = p.name || '';
     document.getElementById('p-category').value = p.category || 'Roses';
-    document.getElementById('p-image').value = p.image || '';
     document.getElementById('p-description').value = p.description || '';
     document.getElementById('p-new').value = p.New || '';
     document.getElementById('p-old').value = p.Old || '';
     if (p.image) {
+      document.getElementById('p-image').value = p.image;
+      if (/^https?:\/\//.test(p.image)) {
+        switchImgTab('url');
+        document.getElementById('p-image-url').value = p.image;
+      } else {
+        switchImgTab('path');
+        document.getElementById('p-image-path').value = p.image;
+      }
       const prev = document.getElementById('p-preview');
-      prev.src = 'images/' + p.image;
+      prev.src = /^https?:\/\//.test(p.image) ? p.image : 'images/' + p.image;
       document.getElementById('p-preview-wrap').classList.remove('hidden');
     }
   } else {
@@ -725,25 +792,18 @@ window.closeProductModal = function() {
   document.getElementById('product-modal').classList.remove('flex');
 };
 
-document.getElementById('p-image').addEventListener('input', function() {
-  const val = this.value.trim();
-  const wrap = document.getElementById('p-preview-wrap');
-  const prev = document.getElementById('p-preview');
-  if (val) {
-    prev.src = 'images/' + val;
-    wrap.classList.remove('hidden');
-  } else {
-    wrap.classList.add('hidden');
-  }
-});
-
 document.getElementById('product-form').addEventListener('submit', async e => {
   e.preventDefault();
   const id = document.getElementById('product-id').value;
+  const imageVal = document.getElementById('p-image').value.trim();
+  if (!imageVal) {
+    showToast('Please provide a product image', 'error');
+    return;
+  }
   const data = {
     name: document.getElementById('p-name').value.trim(),
     category: document.getElementById('p-category').value,
-    image: document.getElementById('p-image').value.trim(),
+    image: imageVal,
     description: document.getElementById('p-description').value.trim(),
     New: document.getElementById('p-new').value,
     Old: document.getElementById('p-old').value,
@@ -952,6 +1012,178 @@ function showToast(msg, type = 'success') {
 function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+
+// ── Image Tab Switcher ─────────────────────────────
+window.switchImgTab = function(tab) {
+  ['url', 'path', 'upload'].forEach(t => {
+    const panel = document.getElementById('img-input-' + t);
+    const btn = document.getElementById('img-tab-' + t);
+    if (!panel || !btn) return;
+    panel.classList.toggle('hidden', t !== tab);
+    if (t === tab) {
+      btn.classList.add('bg-white', 'text-primary', 'shadow-sm');
+      btn.classList.remove('text-muted');
+    } else {
+      btn.classList.remove('bg-white', 'text-primary', 'shadow-sm');
+      btn.classList.add('text-muted');
+    }
+  });
+  // Update p-image hidden field and preview from active tab input
+  updateImageFromTab(tab);
+};
+
+function updateImageFromTab(tab) {
+  let val = '';
+  if (tab === 'url') val = (document.getElementById('p-image-url') || {}).value || '';
+  else if (tab === 'path') val = (document.getElementById('p-image-path') || {}).value || '';
+  // upload tab: value is set after Cloudinary upload completes
+  if (tab !== 'upload') {
+    document.getElementById('p-image').value = val.trim();
+    updatePreview(val.trim());
+  }
+}
+
+function updatePreview(imgVal) {
+  const wrap = document.getElementById('p-preview-wrap');
+  const prev = document.getElementById('p-preview');
+  if (imgVal) {
+    prev.src = /^https?:\/\//.test(imgVal) ? imgVal : 'images/' + imgVal;
+    wrap.classList.remove('hidden');
+  } else {
+    wrap.classList.add('hidden');
+  }
+}
+
+// Live preview on URL/path input
+document.addEventListener('DOMContentLoaded', () => {
+  const urlIn = document.getElementById('p-image-url');
+  const pathIn = document.getElementById('p-image-path');
+  if (urlIn) urlIn.addEventListener('input', () => {
+    document.getElementById('p-image').value = urlIn.value.trim();
+    updatePreview(urlIn.value.trim());
+  });
+  if (pathIn) pathIn.addEventListener('input', () => {
+    document.getElementById('p-image').value = pathIn.value.trim();
+    updatePreview(pathIn.value.trim());
+  });
+
+  // Cloudinary file upload
+  const fileIn = document.getElementById('p-image-file');
+  if (fileIn) fileIn.addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file) return;
+    const statusEl = document.getElementById('upload-status');
+    const labelEl = document.getElementById('upload-label-text');
+    statusEl.classList.remove('hidden');
+    statusEl.textContent = '⏳ Uploading…';
+    statusEl.className = 'text-xs mt-1 text-muted';
+    try {
+      const url = await uploadToCloudinary(file);
+      document.getElementById('p-image').value = url;
+      updatePreview(url);
+      statusEl.textContent = '✓ Uploaded successfully';
+      statusEl.className = 'text-xs mt-1 text-green-700';
+      labelEl.textContent = file.name;
+    } catch(err) {
+      statusEl.textContent = '✗ Upload failed: ' + err.message;
+      statusEl.className = 'text-xs mt-1 text-red-600';
+    }
+  });
+});
+
+// ── Cloudinary Upload ─────────────────────────────
+async function uploadToCloudinary(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', 'mederhoo');
+  const res = await fetch('https://api.cloudinary.com/v1_1/dcxiweypa/image/upload', {
+    method: 'POST',
+    body: formData
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.secure_url;
+}
+
+// ── Quick-Set Stock Status (Firestore product) ────
+window.setStockStatus = async function(productId, status) {
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
+  const date = status === 'fresh' ? today : yesterday;
+  try {
+    await updateDoc(doc(db, 'products', productId), { New: date });
+    showToast(status === 'fresh' ? '✅ Set to In-Stock Fresh' : '🟡 Set to Still In-Stock', 'success');
+    await loadProducts();
+  } catch(err) {
+    showToast('Update failed: ' + err.message, 'error');
+  }
+};
+
+// ── Static Products Panel ─────────────────────────
+window.toggleStaticPanel = function() {
+  const panel = document.getElementById('static-products-panel');
+  const arrow = document.getElementById('static-panel-arrow');
+  const isHidden = panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !isHidden);
+  arrow.style.transform = isHidden ? 'rotate(90deg)' : '';
+  if (isHidden) renderStaticProductsList();
+};
+
+function renderStaticProductsList() {
+  const tbody = document.getElementById('static-products-tbody');
+  if (!tbody || typeof products === 'undefined') return;
+  const rows = [];
+  for (const [category, items] of Object.entries(products)) {
+    items.forEach(p => {
+      const existing = allProducts.find(fp => fp.name === p.name && fp.category === category);
+      const status = existing ? freshnessLabel(existing.New) : '<span class="text-gray-400">Not in Firestore</span>';
+      const nameJs = escHtml(p.name).replace(/'/g, '&#39;');
+      const catJs = escHtml(category).replace(/'/g, '&#39;');
+      const imgJs = escHtml(p.image || '').replace(/'/g, '&#39;');
+      const descJs = escHtml(p.description || '').replace(/'/g, '&#39;');
+      const oldJs = escHtml(p.Old || '').replace(/'/g, '&#39;');
+      rows.push(`
+        <tr class="transition-colors hover:bg-gray-50">
+          <td class="px-4 py-2.5">
+            <p class="font-bold text-espresso text-xs">${escHtml(p.name)}</p>
+            <p class="text-muted text-[10px]">${status}</p>
+          </td>
+          <td class="px-4 py-2.5 hidden sm:table-cell">
+            <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-50 text-primary border border-orange-100">
+              ${escHtml(category)}
+            </span>
+          </td>
+          <td class="px-4 py-2.5 text-right whitespace-nowrap">
+            <button onclick="setStaticProductStock('${nameJs}','${catJs}','${imgJs}','${descJs}','${oldJs}','fresh')"
+              class="text-[10px] px-2 py-1 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition mr-1">✅ In-Stock Fresh</button>
+            <button onclick="setStaticProductStock('${nameJs}','${catJs}','${imgJs}','${descJs}','${oldJs}','still')"
+              class="text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition">🟡 Still In-Stock</button>
+          </td>
+        </tr>`);
+    });
+  }
+  tbody.innerHTML = rows.join('');
+}
+
+window.setStaticProductStock = async function(name, category, image, description, Old, status) {
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
+  const date = status === 'fresh' ? today : yesterday;
+  const existing = allProducts.find(p => p.name === name && p.category === category);
+  try {
+    if (existing) {
+      await updateDoc(doc(db, 'products', existing.id), { New: date });
+    } else {
+      await addDoc(collection(db, 'products'), { name, category, image, description, Old, New: date });
+    }
+    showToast(`${name} → ${status === 'fresh' ? 'In-Stock Fresh ✅' : 'Still In-Stock 🟡'}`, 'success');
+    await loadProducts();
+    renderStaticProductsList();
+  } catch(err) {
+    showToast('Failed: ' + err.message, 'error');
+  }
+};
 </script>
 
 </body>
