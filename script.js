@@ -274,7 +274,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // If firebase-data.js is still loading Firestore data, defer init() until it's ready.
     // Otherwise call init() immediately with the static data already in memory.
     if (window.__firebaseDataLoading) {
-        window.__onFirebaseDataReady = init;
+        let initiated = false;
+        const doInit = () => { if (!initiated) { initiated = true; init(); } };
+        window.__onFirebaseDataReady = doInit;
+        // Safety fallback: if the Firebase SDK or network fails entirely and the
+        // callback is never invoked, still render the page after 10 seconds.
+        setTimeout(doInit, 10000);
     } else {
         init();
     }
