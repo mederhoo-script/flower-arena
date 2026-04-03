@@ -504,6 +504,7 @@ import { getFirestore, collection, getDocs, addDoc, setDoc,
 
 // ── Fetch config from Vercel serverless function ───
 let app, auth, db;
+let cloudinaryConfig = { cloudName: '', uploadPreset: '' };
 try {
   const cfgRes = await fetch('/api/config');
   if (!cfgRes.ok) throw new Error(`/api/config returned ${cfgRes.status}`);
@@ -511,6 +512,7 @@ try {
   app  = initializeApp(cfg.firebase);
   auth = getAuth(app);
   db   = getFirestore(app);
+  if (cfg.cloudinary) cloudinaryConfig = cfg.cloudinary;
 } catch (err) {
   console.error('[Flower Arena] Failed to load config:', err);
   const errEl = document.getElementById('login-error');
@@ -1120,23 +1122,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Cloudinary Upload ─────────────────────────────
 async function uploadToCloudinary(file) {
-  const cfgRes = await fetch('/api/config');
-  const cfg = await cfgRes.json();
-  const { cloudName, uploadPreset } = cfg.cloudinary;
+  const { cloudName, uploadPreset } = cloudinaryConfig;
+  if (!cloudName || !uploadPreset) {
+    throw new Error(
+      'Cloudinary is not configured. Set CLOUDINARY_CLOUD_NAME and ' +
+      'CLOUDINARY_UPLOAD_PRESET in your Vercel environment variables.'
+    );
+  }
   const formData = new FormData();
   formData.append('file', file);
   formData.append('upload_preset', uploadPreset);
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-    method: 'POST',
-    body: formData
+  formData.append('folder', 'flowers');
+  const uploadPromise = fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+    { method: 'POST', body: formData }
+  ).then(async res => {
+    if (!res.ok) {
+      const hint = res.status === 413 ? ' (file may be too large)' : ' — check your network and try again';
+      throw new Error(`Upload failed (HTTP ${res.status}${hint})`);
+    }
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    if (!data.secure_url) throw new Error('Cloudinary upload succeeded but returned no URL.');
+    return data.secure_url;
   });
-  if (!res.ok) {
-    const hint = res.status === 413 ? ' (file may be too large)' : ' — check your network and try again';
-    throw new Error(`Upload failed (HTTP ${res.status}${hint})`);
-  }
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  return data.secure_url;
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Image upload timed out after 30s.')), 30_000)
+  );
+  return Promise.race([uploadPromise, timeoutPromise]);
 }
 
 // ── Quick-Set Stock Status (Firestore product) ────
