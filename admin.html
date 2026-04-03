@@ -1047,7 +1047,13 @@ function updatePreview(imgVal) {
   const wrap = document.getElementById('p-preview-wrap');
   const prev = document.getElementById('p-preview');
   if (imgVal) {
-    prev.src = /^https?:\/\//.test(imgVal) ? imgVal : 'images/' + imgVal;
+    if (/^https?:\/\//i.test(imgVal)) {
+      prev.src = imgVal;
+    } else {
+      // Relative path — strip traversal sequences
+      const safePath = imgVal.replace(/\.\.\//g, '').replace(/^\/+/, '');
+      prev.src = 'images/' + safePath;
+    }
     wrap.classList.remove('hidden');
   } else {
     wrap.classList.add('hidden');
@@ -1089,6 +1095,22 @@ document.addEventListener('DOMContentLoaded', () => {
       statusEl.className = 'text-xs mt-1 text-red-600';
     }
   });
+
+  // Event delegation for static product stock buttons
+  const staticTbody = document.getElementById('static-products-tbody');
+  if (staticTbody) {
+    staticTbody.addEventListener('click', async function(e) {
+      const btn = e.target.closest('.static-stock-btn');
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.staticIdx, 10);
+      const status = btn.dataset.status;
+      const p = staticProductData[idx];
+      if (!p) return;
+      btn.disabled = true;
+      await applyStaticProductStock(p, status);
+      btn.disabled = false;
+    });
+  }
 });
 
 // ── Cloudinary Upload ─────────────────────────────
@@ -1100,7 +1122,7 @@ async function uploadToCloudinary(file) {
     method: 'POST',
     body: formData
   });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
+  if (!res.ok) throw new Error(`Cloudinary upload failed (HTTP ${res.status} ${res.statusText})`);
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
   return data.secure_url;
@@ -1121,6 +1143,8 @@ window.setStockStatus = async function(productId, status) {
 };
 
 // ── Static Products Panel ─────────────────────────
+const staticProductData = [];
+
 window.toggleStaticPanel = function() {
   const panel = document.getElementById('static-products-panel');
   const arrow = document.getElementById('static-panel-arrow');
@@ -1133,21 +1157,19 @@ window.toggleStaticPanel = function() {
 function renderStaticProductsList() {
   const tbody = document.getElementById('static-products-tbody');
   if (!tbody || typeof products === 'undefined') return;
+  staticProductData.length = 0;
   const rows = [];
+  let idx = 0;
   for (const [category, items] of Object.entries(products)) {
     items.forEach(p => {
+      staticProductData.push({ ...p, category });
       const existing = allProducts.find(fp => fp.name === p.name && fp.category === category);
-      const status = existing ? freshnessLabel(existing.New) : '<span class="text-gray-400">Not in Firestore</span>';
-      const nameJs = escHtml(p.name).replace(/'/g, '&#39;');
-      const catJs = escHtml(category).replace(/'/g, '&#39;');
-      const imgJs = escHtml(p.image || '').replace(/'/g, '&#39;');
-      const descJs = escHtml(p.description || '').replace(/'/g, '&#39;');
-      const oldJs = escHtml(p.Old || '').replace(/'/g, '&#39;');
+      const statusText = existing ? freshnessLabel(existing.New) : '<span class="text-gray-400">Not in Firestore</span>';
       rows.push(`
         <tr class="transition-colors hover:bg-gray-50">
           <td class="px-4 py-2.5">
             <p class="font-bold text-espresso text-xs">${escHtml(p.name)}</p>
-            <p class="text-muted text-[10px]">${status}</p>
+            <p class="text-muted text-[10px]">${statusText}</p>
           </td>
           <td class="px-4 py-2.5 hidden sm:table-cell">
             <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-50 text-primary border border-orange-100">
@@ -1155,35 +1177,39 @@ function renderStaticProductsList() {
             </span>
           </td>
           <td class="px-4 py-2.5 text-right whitespace-nowrap">
-            <button onclick="setStaticProductStock('${nameJs}','${catJs}','${imgJs}','${descJs}','${oldJs}','fresh')"
-              class="text-[10px] px-2 py-1 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition mr-1">✅ In-Stock Fresh</button>
-            <button onclick="setStaticProductStock('${nameJs}','${catJs}','${imgJs}','${descJs}','${oldJs}','still')"
-              class="text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition">🟡 Still In-Stock</button>
+            <button data-static-idx="${idx}" data-status="fresh"
+              class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition mr-1">✅ In-Stock Fresh</button>
+            <button data-static-idx="${idx}" data-status="still"
+              class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition">🟡 Still In-Stock</button>
           </td>
         </tr>`);
+      idx++;
     });
   }
   tbody.innerHTML = rows.join('');
 }
 
-window.setStaticProductStock = async function(name, category, image, description, Old, status) {
+async function applyStaticProductStock(p, status) {
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
   const date = status === 'fresh' ? today : yesterday;
-  const existing = allProducts.find(p => p.name === name && p.category === category);
+  const existing = allProducts.find(fp => fp.name === p.name && fp.category === p.category);
   try {
     if (existing) {
       await updateDoc(doc(db, 'products', existing.id), { New: date });
     } else {
-      await addDoc(collection(db, 'products'), { name, category, image, description, Old, New: date });
+      await addDoc(collection(db, 'products'), {
+        name: p.name, category: p.category, image: p.image || '',
+        description: p.description || '', Old: p.Old || '', New: date
+      });
     }
-    showToast(`${name} → ${status === 'fresh' ? 'In-Stock Fresh ✅' : 'Still In-Stock 🟡'}`, 'success');
+    showToast(`${p.name} → ${status === 'fresh' ? 'In-Stock Fresh ✅' : 'Still In-Stock 🟡'}`, 'success');
     await loadProducts();
     renderStaticProductsList();
   } catch(err) {
     showToast('Failed: ' + err.message, 'error');
   }
-};
+}
 </script>
 
 </body>
