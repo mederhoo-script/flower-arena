@@ -8,14 +8,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/fireba
 import { getFirestore, collection, getDocs, doc, getDoc }
   from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
+const env = window.__ENV || {};
 const firebaseConfig = {
-  apiKey: "AIzaSyD_n8A9lNoaPgdEHxokqY-A0OAryHEsR4g",
-  authDomain: "vtu-platform.firebaseapp.com",
-  projectId: "vtu-platform",
-  storageBucket: "vtu-platform.firebasestorage.app",
-  messagingSenderId: "730960900503",
-  appId: "1:730960900503:web:7daabad4f38ae213b414d2",
-  measurementId: "G-7V34R30WW1"
+  apiKey: env.FIREBASE_API_KEY,
+  authDomain: env.FIREBASE_AUTH_DOMAIN,
+  projectId: env.FIREBASE_PROJECT_ID,
+  storageBucket: env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: env.FIREBASE_APP_ID,
+  measurementId: env.FIREBASE_MEASUREMENT_ID
 };
 
 // Signal to script.js that we're loading async data
