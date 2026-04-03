@@ -46,7 +46,7 @@ function showProductDetails(product, category) {
     // Set static content
     title.innerText = product.name;
     desc.innerText = product.description;
-    img.src = `images/${product.image}`;
+    img.src = /^https?:\/\//.test(product.image) ? product.image : `images/${product.image}`;
     cat.innerText = category;
 
     // Apply Config from config.js
@@ -82,11 +82,12 @@ function createProductCard(product, category, isGrid = false) {
     card.className = `product-card ${widthClass} bg-white rounded-2xl shadow-sm transition-all duration-300 group overflow-hidden cursor-pointer snap-start`;
 
     const altText = `${category} — ${product.name}: ${product.description}`;
+    const imgSrc = /^https?:\/\//.test(product.image) ? product.image : `images/${product.image}`;
 
     card.innerHTML = `
     <div class="card-image-wrapper relative w-full h-36 md:h-48 overflow-hidden">
       <img
-        src="images/${product.image}"
+        src="${imgSrc}"
         alt="${altText}"
         loading="lazy"
         class="w-full h-full object-cover transition-transform duration-500"
@@ -230,21 +231,36 @@ function initFooter() {
 }
 
 function init() {
-    const buckets = { today: [], yesterday: [], thirdDay: [], all: [] };
+    const buckets = { inStockFresh: [], stillInStock: [], all: [] };
 
     for (const [category, items] of Object.entries(products)) {
         items.forEach(product => {
             const entry = { product, category };
             buckets.all.push(entry);
-            if (product.New === dateToday) buckets.today.push(entry);
-            else if (product.New === dateYesterday) buckets.yesterday.push(entry);
-            else if (product.New === dateThirdDay) buckets.thirdDay.push(entry);
+            const s = product.stockStatus;
+            const dateStr = product.New;
+            // Determine whether the product is still within its visible window
+            // (today, yesterday, or two days ago) based on the New date.
+            const isFreshDate = dateStr >= dateToday;
+            const isStillDate = dateStr === dateYesterday || dateStr === dateThirdDay;
+            const isExpired   = dateStr && !isFreshDate && !isStillDate;
+
+            if (isExpired) {
+                // Product is too old — auto-disappear regardless of stockStatus
+            } else if (s) {
+                // stockStatus controls *which* section(s) to show in,
+                // but only while the New date is still within its window.
+                if (s === 'fresh' || s === 'both') buckets.inStockFresh.push(entry);
+                if (s === 'still' || s === 'both') buckets.stillInStock.push(entry);
+            } else {
+                if (isFreshDate) buckets.inStockFresh.push(entry);
+                else if (isStillDate) buckets.stillInStock.push(entry);
+            }
         });
     }
 
-    renderGrid("today-grid", buckets.today, "Today's products will be out soon, please contact us here.");
-    renderGrid("yesterday-grid", buckets.yesterday, "Looking for something special from yesterday? Contact us.");
-    renderGrid("third-day-grid", buckets.thirdDay, "Browse our collection via WhatsApp for older products.");
+    renderGrid("today-grid", buckets.inStockFresh, "Today's products will be out soon, please contact us here.");
+    renderGrid("yesterday-grid", buckets.stillInStock, "Looking for something special from yesterday? Contact us.");
     renderCarousel("bottom-carousel", buckets.all, "Our catalog is being updated.", true);
 
     renderEvents();
@@ -258,7 +274,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // If firebase-data.js is still loading Firestore data, defer init() until it's ready.
     // Otherwise call init() immediately with the static data already in memory.
     if (window.__firebaseDataLoading) {
-        window.__onFirebaseDataReady = init;
+        let initiated = false;
+        const doInit = () => { if (!initiated) { initiated = true; init(); } };
+        window.__onFirebaseDataReady = doInit;
+        // Safety fallback: if the Firebase SDK or network fails entirely and the
+        // callback is never invoked, still render the page after 10 seconds.
+        setTimeout(doInit, 10000);
     } else {
         init();
     }

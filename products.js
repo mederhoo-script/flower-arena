@@ -6,7 +6,7 @@
 // "Yesterday" as the real-world date passes.
 // ============================================================
 
-const products = {
+var products = {
 
   // ── Roses ──────────────────────────────────────────────────
   Roses: [

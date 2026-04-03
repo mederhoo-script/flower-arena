@@ -3,7 +3,7 @@
 // Edit these values to update your contact info everywhere!
 // ============================================================
 
-const shopConfig = {
+var shopConfig = {
     // ── WhatsApp Settings ──────────────────────────────────────
     whatsapp: {
         number: "2348034295030", // Include country code, no "+" or spaces

@@ -11,7 +11,7 @@
 //               or add your files to images/events/ and update below.
 // ============================================================
 
-const events = [
+var events = [
 
     // ── Valentine's Day ────────────────────────────────────────
     {

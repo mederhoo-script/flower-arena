@@ -8,24 +8,20 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/fireba
 import { getFirestore, collection, getDocs, doc, getDoc }
   from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyD_n8A9lNoaPgdEHxokqY-A0OAryHEsR4g",
-  authDomain: "vtu-platform.firebaseapp.com",
-  projectId: "vtu-platform",
-  storageBucket: "vtu-platform.firebasestorage.app",
-  messagingSenderId: "730960900503",
-  appId: "1:730960900503:web:7daabad4f38ae213b414d2",
-  measurementId: "G-7V34R30WW1"
-};
-
 // Signal to script.js that we're loading async data
 window.__firebaseDataLoading = true;
 
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
-
 async function loadFirestoreData() {
   try {
+    // ── Fetch config from Vercel serverless function ───
+    const cfgRes = await fetch('/api/config');
+    if (!cfgRes.ok) throw new Error(`/api/config returned ${cfgRes.status}`);
+    const cfg = await cfgRes.json();
+    const firebaseConfig = cfg.firebase;
+
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getFirestore(firebaseApp);
+
     // ── Products ──────────────────────────────────────
     const productsSnap = await getDocs(collection(db, 'products'));
     if (!productsSnap.empty) {
