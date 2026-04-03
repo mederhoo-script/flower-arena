@@ -702,6 +702,8 @@ function renderProducts() {
             class="text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition" title="Set Still In-Stock (yesterday)">🟡 Still</button>
           <button onclick="setStockStatus('${p.id}','both')"
             class="text-[10px] px-2 py-1 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition" title="Show in both In-Stock sections">📦 Both</button>
+          <button onclick="setStockStatus('${p.id}','none')"
+            class="text-[10px] px-2 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition" title="Remove from all In-Stock sections">🚫 Remove</button>
           <button onclick="openProductModal('${p.id}')"
             class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition text-espresso">Edit</button>
           <button onclick="confirmDelete('product','${p.id}','${escHtml(p.name)}')"
@@ -730,6 +732,7 @@ function freshnessLabel(productOrDate) {
     const isStill = dateStr === yesterday || dateStr === twoDaysAgo;
     if (!isFresh && !isStill) return '⚫ Expired — hidden on site';
   }
+  if (stockStatus === 'none')  return '🚫 Removed from In-Stock';
   if (stockStatus === 'both')  return '✅🟡 In Both Sections';
   if (stockStatus === 'fresh') return '✅ In-Stock Fresh';
   if (stockStatus === 'still') return '🟡 Still In-Stock';
@@ -1186,6 +1189,7 @@ window.setStockStatus = async function(productId, status) {
     await updateDoc(doc(db, 'products', productId), updateData);
     const label = status === 'fresh' ? '✅ Set to In-Stock Fresh'
                 : status === 'still' ? '🟡 Set to Still In-Stock'
+                : status === 'none'  ? '🚫 Removed from In-Stock'
                 : '📦 Set to In Both Sections';
     showToast(label, 'success');
     await loadProducts();
@@ -1236,6 +1240,8 @@ function renderStaticProductsList() {
                 class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition">🟡 Still</button>
               <button data-static-idx="${idx}" data-status="both"
                 class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition">📦 Both</button>
+              <button data-static-idx="${idx}" data-status="none"
+                class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition">🚫 Remove</button>
             </div>
           </td>
         </tr>`);
@@ -1260,8 +1266,9 @@ async function applyStaticProductStock(p, status) {
         description: p.description || '', Old: p.Old || '', New: date, stockStatus: status
       });
     }
-    const label = status === 'both' ? '📦 In Both Sections'
+    const label = status === 'both'  ? '📦 In Both Sections'
                 : status === 'fresh' ? 'In-Stock Fresh ✅'
+                : status === 'none'  ? 'Removed from In-Stock 🚫'
                 : 'Still In-Stock 🟡';
     showToast(`${p.name} → ${label}`, 'success');
     await loadProducts();
