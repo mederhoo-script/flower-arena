@@ -1068,7 +1068,9 @@ function updatePreview(imgVal) {
 }
 
 // Live preview on URL/path input
-document.addEventListener('DOMContentLoaded', () => {
+// DOM is already loaded — top-level await has already resolved by this point,
+// so DOMContentLoaded has long since fired. Wire up listeners directly.
+{
   const urlIn = document.getElementById('p-image-url');
   const pathIn = document.getElementById('p-image-path');
   if (urlIn) urlIn.addEventListener('input', () => {
@@ -1118,7 +1120,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.disabled = false;
     });
   }
-});
+}
 
 // ── Cloudinary Upload ─────────────────────────────
 async function uploadToCloudinary(file) {
