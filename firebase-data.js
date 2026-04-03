@@ -15,6 +15,7 @@ async function loadFirestoreData() {
   try {
     // ── Fetch config from Vercel serverless function ───
     const cfgRes = await fetch('/api/config');
+    if (!cfgRes.ok) throw new Error(`/api/config returned ${cfgRes.status}`);
     const cfg = await cfgRes.json();
     const firebaseConfig = cfg.firebase;
 

@@ -1,7 +1,7 @@
 // /api/config.js — Vercel Serverless Function
 // Returns public Firebase + Cloudinary config from environment variables.
 // Vercel injects variables defined in .env (or the Vercel dashboard) as process.env.
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'no-store');
   res.status(200).json({
@@ -19,4 +19,4 @@ export default function handler(req, res) {
       uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET,
     },
   });
-}
+};

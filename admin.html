@@ -503,11 +503,23 @@ import { getFirestore, collection, getDocs, addDoc, setDoc,
   from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 // ── Fetch config from Vercel serverless function ───
-const cfgRes = await fetch('/api/config');
-const cfg = await cfgRes.json();
-const app = initializeApp(cfg.firebase);
-const auth = getAuth(app);
-const db = getFirestore(app);
+let app, auth, db;
+try {
+  const cfgRes = await fetch('/api/config');
+  if (!cfgRes.ok) throw new Error(`/api/config returned ${cfgRes.status}`);
+  const cfg = await cfgRes.json();
+  app  = initializeApp(cfg.firebase);
+  auth = getAuth(app);
+  db   = getFirestore(app);
+} catch (err) {
+  console.error('[Flower Arena] Failed to load config:', err);
+  const errEl = document.getElementById('login-error');
+  if (errEl) {
+    errEl.textContent = 'Configuration error — please check Vercel environment variables.';
+    errEl.classList.remove('hidden');
+  }
+  throw err; // stop module execution
+}
 
 // ── Data State ─────────────────────────────────────
 let allProducts = [];
