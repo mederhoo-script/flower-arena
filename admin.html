@@ -198,7 +198,7 @@
         </div>
 
         <!-- Products Table -->
-        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm overflow-x-auto">
           <div id="products-loading" class="py-12 text-center text-muted text-sm">Loading products…</div>
           <div id="products-empty" class="hidden py-12 text-center">
             <p class="text-muted text-sm mb-3">No products found.</p>
@@ -690,24 +690,38 @@ function renderProducts() {
       </td>
       <td class="px-4 py-3 hidden md:table-cell">
         <span class="text-xs font-mono text-espresso">${escHtml(p.New || '—')}</span>
-        <span class="block text-[10px] text-muted">${freshnessLabel(p.New)}</span>
+        <span class="block text-[10px] text-muted">${freshnessLabel(p)}</span>
       </td>
       <td class="px-4 py-3 hidden lg:table-cell text-xs font-mono text-muted">${escHtml(p.Old || '—')}</td>
-      <td class="px-4 py-3 text-right">
-        <button onclick="setStockStatus('${p.id}','fresh')"
-          class="text-[10px] px-2 py-1 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition mr-1" title="Set In-Stock Fresh (today)">✅ Fresh</button>
-        <button onclick="setStockStatus('${p.id}','still')"
-          class="text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition mr-1" title="Set Still In-Stock (yesterday)">🟡 Still</button>
-        <button onclick="openProductModal('${p.id}')"
-          class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition mr-1 text-espresso">Edit</button>
-        <button onclick="confirmDelete('product','${p.id}','${escHtml(p.name)}')"
-          class="text-xs px-3 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 transition">Delete</button>
+      <td class="px-4 py-3">
+        <div class="flex flex-wrap justify-end gap-1">
+          <button onclick="setStockStatus('${p.id}','fresh')"
+            class="text-[10px] px-2 py-1 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition" title="Set In-Stock Fresh (today)">✅ Fresh</button>
+          <button onclick="setStockStatus('${p.id}','still')"
+            class="text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition" title="Set Still In-Stock (yesterday)">🟡 Still</button>
+          <button onclick="setStockStatus('${p.id}','both')"
+            class="text-[10px] px-2 py-1 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition" title="Show in both In-Stock sections">📦 Both</button>
+          <button onclick="openProductModal('${p.id}')"
+            class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition text-espresso">Edit</button>
+          <button onclick="confirmDelete('product','${p.id}','${escHtml(p.name)}')"
+            class="text-xs px-3 py-1.5 rounded-lg border border-red-100 text-red-500 hover:bg-red-50 transition">Delete</button>
+        </div>
       </td>
     </tr>
   `}).join('');
 }
 
-function freshnessLabel(dateStr) {
+function freshnessLabel(productOrDate) {
+  let stockStatus, dateStr;
+  if (productOrDate && typeof productOrDate === 'object') {
+    stockStatus = productOrDate.stockStatus;
+    dateStr = productOrDate.New;
+  } else {
+    dateStr = productOrDate;
+  }
+  if (stockStatus === 'both')  return '✅🟡 In Both Sections';
+  if (stockStatus === 'fresh') return '✅ In-Stock Fresh';
+  if (stockStatus === 'still') return '🟡 Still In-Stock';
   if (!dateStr) return '';
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
@@ -1158,10 +1172,14 @@ async function uploadToCloudinary(file) {
 window.setStockStatus = async function(productId, status) {
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
-  const date = status === 'fresh' ? today : yesterday;
+  const date = (status === 'still') ? yesterday : today;
+  const updateData = { New: date, stockStatus: status };
   try {
-    await updateDoc(doc(db, 'products', productId), { New: date });
-    showToast(status === 'fresh' ? '✅ Set to In-Stock Fresh' : '🟡 Set to Still In-Stock', 'success');
+    await updateDoc(doc(db, 'products', productId), updateData);
+    const label = status === 'fresh' ? '✅ Set to In-Stock Fresh'
+                : status === 'still' ? '🟡 Set to Still In-Stock'
+                : '📦 Set to In Both Sections';
+    showToast(label, 'success');
     await loadProducts();
   } catch(err) {
     showToast('Update failed: ' + err.message, 'error');
@@ -1190,7 +1208,7 @@ function renderStaticProductsList() {
     items.forEach(p => {
       staticProductData.push({ ...p, category });
       const existing = allProducts.find(fp => fp.name === p.name && fp.category === category);
-      const statusText = existing ? freshnessLabel(existing.New) : '<span class="text-gray-400">Not in Firestore</span>';
+      const statusText = existing ? freshnessLabel(existing) : '<span class="text-gray-400">Not in Firestore</span>';
       rows.push(`
         <tr class="transition-colors hover:bg-gray-50">
           <td class="px-4 py-2.5">
@@ -1202,11 +1220,15 @@ function renderStaticProductsList() {
               ${escHtml(category)}
             </span>
           </td>
-          <td class="px-4 py-2.5 text-right whitespace-nowrap">
-            <button data-static-idx="${idx}" data-status="fresh"
-              class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition mr-1">✅ In-Stock Fresh</button>
-            <button data-static-idx="${idx}" data-status="still"
-              class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition">🟡 Still In-Stock</button>
+          <td class="px-4 py-2.5">
+            <div class="flex flex-wrap justify-end gap-1">
+              <button data-static-idx="${idx}" data-status="fresh"
+                class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition">✅ Fresh</button>
+              <button data-static-idx="${idx}" data-status="still"
+                class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-yellow-200 text-yellow-700 hover:bg-yellow-50 transition">🟡 Still</button>
+              <button data-static-idx="${idx}" data-status="both"
+                class="static-stock-btn text-[10px] px-2 py-1 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-50 transition">📦 Both</button>
+            </div>
           </td>
         </tr>`);
       idx++;
@@ -1218,18 +1240,22 @@ function renderStaticProductsList() {
 async function applyStaticProductStock(p, status) {
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
-  const date = status === 'fresh' ? today : yesterday;
+  const date = (status === 'still') ? yesterday : today;
+  const updateData = { New: date, stockStatus: status };
   const existing = allProducts.find(fp => fp.name === p.name && fp.category === p.category);
   try {
     if (existing) {
-      await updateDoc(doc(db, 'products', existing.id), { New: date });
+      await updateDoc(doc(db, 'products', existing.id), updateData);
     } else {
       await addDoc(collection(db, 'products'), {
         name: p.name, category: p.category, image: p.image || '',
-        description: p.description || '', Old: p.Old || '', New: date
+        description: p.description || '', Old: p.Old || '', New: date, stockStatus: status
       });
     }
-    showToast(`${p.name} → ${status === 'fresh' ? 'In-Stock Fresh ✅' : 'Still In-Stock 🟡'}`, 'success');
+    const label = status === 'both' ? '📦 In Both Sections'
+                : status === 'fresh' ? 'In-Stock Fresh ✅'
+                : 'Still In-Stock 🟡';
+    showToast(`${p.name} → ${label}`, 'success');
     await loadProducts();
     renderStaticProductsList();
   } catch(err) {

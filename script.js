@@ -237,8 +237,14 @@ function init() {
         items.forEach(product => {
             const entry = { product, category };
             buckets.all.push(entry);
-            if (product.New >= dateToday) buckets.inStockFresh.push(entry);
-            else if (product.New === dateYesterday || product.New === dateThirdDay) buckets.stillInStock.push(entry);
+            const s = product.stockStatus;
+            if (s) {
+                if (s === 'fresh' || s === 'both') buckets.inStockFresh.push(entry);
+                if (s === 'still' || s === 'both') buckets.stillInStock.push(entry);
+            } else {
+                if (product.New >= dateToday) buckets.inStockFresh.push(entry);
+                else if (product.New === dateYesterday || product.New === dateThirdDay) buckets.stillInStock.push(entry);
+            }
         });
     }
 

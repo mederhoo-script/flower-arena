@@ -237,6 +237,9 @@
     <script src="products.js"></script>
     <script src="events.js"></script>
     <script src="script.js"></script>
+    <!-- Set the loading flag synchronously so DOMContentLoaded in script.js
+         sees it as true and defers init() until Firestore data is ready. -->
+    <script>window.__firebaseDataLoading = true;</script>
     <!-- Firebase live data — overrides static globals if Firestore has data -->
     <script type="module" src="firebase-data.js"></script>
 
