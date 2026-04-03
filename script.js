@@ -238,12 +238,23 @@ function init() {
             const entry = { product, category };
             buckets.all.push(entry);
             const s = product.stockStatus;
-            if (s) {
+            const dateStr = product.New;
+            // Determine whether the product is still within its visible window
+            // (today, yesterday, or two days ago) based on the New date.
+            const isFreshDate = dateStr >= dateToday;
+            const isStillDate = dateStr === dateYesterday || dateStr === dateThirdDay;
+            const isExpired   = dateStr && !isFreshDate && !isStillDate;
+
+            if (isExpired) {
+                // Product is too old — auto-disappear regardless of stockStatus
+            } else if (s) {
+                // stockStatus controls *which* section(s) to show in,
+                // but only while the New date is still within its window.
                 if (s === 'fresh' || s === 'both') buckets.inStockFresh.push(entry);
                 if (s === 'still' || s === 'both') buckets.stillInStock.push(entry);
             } else {
-                if (product.New >= dateToday) buckets.inStockFresh.push(entry);
-                else if (product.New === dateYesterday || product.New === dateThirdDay) buckets.stillInStock.push(entry);
+                if (isFreshDate) buckets.inStockFresh.push(entry);
+                else if (isStillDate) buckets.stillInStock.push(entry);
             }
         });
     }
