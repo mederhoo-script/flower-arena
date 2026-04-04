@@ -160,6 +160,61 @@ function renderCarousel(containerId, items, emptyMessage, autoScroll = false) {
     container.appendChild(wrap);
 }
 
+// ── Category Filter Chips ────────────────────────────────────
+
+function renderCategoryChips(allItems) {
+    const chipsContainer = document.getElementById("category-chips");
+    if (!chipsContainer) return;
+
+    // Collect unique categories that have at least one product
+    const categories = [];
+    const seen = new Set();
+    allItems.forEach(({ category }) => {
+        if (!seen.has(category)) {
+            seen.add(category);
+            categories.push(category);
+        }
+    });
+
+    if (categories.length === 0) return;
+
+    let activeCategory = "All";
+
+    function buildChips() {
+        chipsContainer.innerHTML = "";
+
+        const allChip = document.createElement("button");
+        allChip.textContent = "All";
+        allChip.className = chipClass(activeCategory === "All");
+        allChip.onclick = () => { activeCategory = "All"; buildChips(); applyFilter(); };
+        chipsContainer.appendChild(allChip);
+
+        categories.forEach(cat => {
+            const chip = document.createElement("button");
+            chip.textContent = cat;
+            chip.className = chipClass(activeCategory === cat);
+            chip.onclick = () => { activeCategory = cat; buildChips(); applyFilter(); };
+            chipsContainer.appendChild(chip);
+        });
+    }
+
+    function chipClass(active) {
+        const base = "px-4 py-1.5 rounded-full text-sm font-bold border transition-all duration-200 ";
+        return active
+            ? base + "bg-primary text-white border-primary shadow-md"
+            : base + "bg-white text-espresso border-orange-100 hover:border-primary hover:text-primary";
+    }
+
+    function applyFilter() {
+        const filtered = activeCategory === "All"
+            ? allItems
+            : allItems.filter(({ category }) => category === activeCategory);
+        renderCarousel("bottom-carousel", filtered, "No products in this category.", true);
+    }
+
+    buildChips();
+}
+
 function renderEvents() {
     const grid = document.getElementById("events-grid");
     if (!grid) return;
@@ -261,6 +316,7 @@ function init() {
 
     renderGrid("today-grid", buckets.inStockFresh, "Today's products will be out soon, please contact us here.");
     renderGrid("yesterday-grid", buckets.stillInStock, "Looking for something special from yesterday? Contact us.");
+    renderCategoryChips(buckets.all);
     renderCarousel("bottom-carousel", buckets.all, "Our catalog is being updated.", true);
 
     renderEvents();
