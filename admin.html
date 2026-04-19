@@ -226,14 +226,23 @@
             <h2 class="font-heading text-2xl font-bold text-espresso">Events</h2>
             <p class="text-sm text-muted">Manage upcoming floral events</p>
           </div>
-          <button onclick="openEventModal(null)"
-            class="bg-primary hover:bg-primary/90 text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
-            <span class="text-base leading-none">+</span> Add Event
-          </button>
+          <div class="flex gap-2">
+            <button onclick="seedEventsFromStaticData()" id="seed-events-btn"
+              class="text-xs border border-primary text-primary hover:bg-primary hover:text-white px-3 py-2 rounded-lg transition hidden">
+              Seed from Site Data
+            </button>
+            <button onclick="openEventModal(null)"
+              class="bg-primary hover:bg-primary/90 text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+              <span class="text-base leading-none">+</span> Add Event
+            </button>
+          </div>
         </div>
         <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div id="events-loading" class="py-12 text-center text-muted text-sm">Loading events…</div>
-          <div id="events-empty" class="hidden py-12 text-center text-muted text-sm">No events yet. Add your first event!</div>
+          <div id="events-empty" class="hidden py-12 text-center">
+            <p class="text-muted text-sm mb-3">No events yet. Add your first event!</p>
+            <button onclick="seedEventsFromStaticData()" class="text-sm text-primary underline hover:no-underline" aria-label="Import events from static site data">Seed with existing site data</button>
+          </div>
           <table id="events-table" class="hidden w-full text-sm">
             <thead class="bg-gray-50 border-b border-gray-100">
               <tr>
@@ -746,14 +755,17 @@ function renderEvents() {
   const empty = document.getElementById('events-empty');
   const table = document.getElementById('events-table');
   const tbody = document.getElementById('events-tbody');
+  const seedBtn = document.getElementById('seed-events-btn');
 
   loading.classList.add('hidden');
   if (allEvents.length === 0) {
     empty.classList.remove('hidden');
     table.classList.add('hidden');
+    if (seedBtn) seedBtn.classList.remove('hidden');
     return;
   }
   empty.classList.add('hidden');
+  if (seedBtn) seedBtn.classList.add('hidden');
   table.classList.remove('hidden');
 
   tbody.innerHTML = allEvents.map(ev => {
@@ -1002,6 +1014,47 @@ window.seedFromStaticData = async function() {
   } finally {
     btn.textContent = originalText;
     btn.disabled = false;
+  }
+};
+
+window.seedEventsFromStaticData = async function() {
+  const btn = document.getElementById('seed-events-btn');
+  if (btn) {
+    btn.textContent = 'Seeding…';
+    btn.disabled = true;
+  }
+  try {
+    if (typeof events === 'undefined' || events.length === 0) {
+      showToast('No static event data found to seed', 'error');
+      return;
+    }
+    let count = 0;
+    let skipped = 0;
+    for (const ev of events) {
+      const isDuplicate = allEvents.some(
+        existing => existing.name === ev.name && existing.date === ev.date
+      );
+      if (isDuplicate) { skipped++; continue; }
+      await addDoc(collection(db, 'events'), {
+        name: ev.name || '',
+        date: ev.date || '',
+        description: ev.description || '',
+        image: ev.image || '',
+      });
+      count++;
+    }
+    const msg = skipped > 0
+      ? `Seeded ${count} event${count !== 1 ? 's' : ''}, skipped ${skipped} duplicate${skipped !== 1 ? 's' : ''} ✓`
+      : `Seeded ${count} event${count !== 1 ? 's' : ''} ✓`;
+    showToast(msg, 'success');
+    await loadEvents();
+  } catch(err) {
+    showToast('Seed failed: ' + err.message, 'error');
+  } finally {
+    if (btn) {
+      btn.textContent = 'Seed from Site Data';
+      btn.disabled = false;
+    }
   }
 };
 
