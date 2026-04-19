@@ -107,8 +107,11 @@ var products = {
     }
   ],
 
-  // ── Tulips ─────────────────────────────────────────────────
-  Tulips: [
+  // ── Chrysanthemums ─────────────────────────────────────────
+  Chrysanthemums: [],
+
+  // ── Carnations ─────────────────────────────────────────────
+  Carnations: [
     {
       name: "Cerise Tulip",
       image: "Tulips/cerise-tulip.jpg",
@@ -124,12 +127,6 @@ var products = {
       New: "2026-03-25"    // Earlier
     }
   ],
-
-  // ── Chrysanthemums ─────────────────────────────────────────
-  Chrysanthemums: [],
-
-  // ── Carnations ─────────────────────────────────────────────
-  Carnations: [],
 
   // ── Gypsophilla ────────────────────────────────────────────
   Gypsophilla: [],

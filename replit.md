@@ -21,7 +21,7 @@ A mobile-responsive static website for a floral boutique called "Flower Arena".
     ├── events/
     ├── Mums/
     ├── Roses/
-    └── Tulips/
+    └── Carnations/
 ```
 
 ## Running the App
@@ -46,7 +46,7 @@ A Firebase-powered admin dashboard at `/admin.html` (linked discreetly from the 
 
 ### Features
 - **Login** — Firebase Auth (email/password). Create users in the Firebase Console.
-- **Products** — Full CRUD. Add/edit/delete flowers across Roses, Mums, Tulips categories. Freshness labels show live status (In-Stock / Day One / Two Days Old). Includes a "Seed from Site Data" button to import the static products.js catalog into Firestore.
+- **Products** — Full CRUD. Add/edit/delete flowers across Roses, Mums, Carnations categories. Freshness labels show live status (In-Stock / Day One / Two Days Old). Includes a "Seed from Site Data" button to import the static products.js catalog into Firestore.
 - **Events** — Full CRUD. Add/edit/delete upcoming seasonal events.
 - **Settings** — Edit WhatsApp number, phone, email, and modal button visibility. Changes are live immediately.
 
