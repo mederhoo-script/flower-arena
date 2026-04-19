@@ -29,12 +29,4 @@ var events = [
         image: "events/mothers_day.jpeg"   // TODO: add images/events/mothers_day.jpg
     },
 
-    // ── Spring Festival ────────────────────────────────────────
-    {
-        name: "Spring Festival",
-        date: "2026-04-20",
-        description: "Fresh spring blooms for the season 🌷",
-        image: "events/spring_festival.jpeg"   // TODO: add images/events/spring_festival.jpg
-    }
-
 ];
