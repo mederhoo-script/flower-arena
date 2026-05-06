@@ -7,6 +7,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import { getFirestore, collection, getDocs, doc, getDoc }
   from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
 // Signal to script.js that we're loading async data
 window.__firebaseDataLoading = true;
@@ -21,6 +23,16 @@ async function loadFirestoreData() {
 
     const firebaseApp = initializeApp(firebaseConfig);
     const db = getFirestore(firebaseApp);
+
+    // ── Auth: show admin footer link only when signed in ──
+    const auth = getAuth(firebaseApp);
+    onAuthStateChanged(auth, user => {
+      const adminLink = document.getElementById('admin-footer-link');
+      if (adminLink) {
+        adminLink.classList.toggle('hidden', !user);
+        adminLink.classList.toggle('inline-block', !!user);
+      }
+    });
 
     // ── Products ──────────────────────────────────────
     const productsSnap = await getDocs(collection(db, 'products'));
